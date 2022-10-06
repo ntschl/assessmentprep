@@ -1,16 +1,18 @@
 package main
 
 import (
+	"math/rand"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func main() {
 	r := gin.Default()
 	r.GET("/albums", getRandomAlbum)
-	r.GET("/albums/:id")
-	r.POST("/albums")
+	r.GET("/albums/:id", getAlbumByID)
+	r.POST("/albums", postAlbum)
 	r.Run("0.0.0.0:80")
 }
 
@@ -28,15 +30,36 @@ var albums = map[string]album{
 	"eb808439-b8c4-4a8c-9306-36a8ccb49727": {"eb808439-b8c4-4a8c-9306-36a8ccb49727", "Perfume", "Wand"},
 }
 
-func getRandomKey() string {
+func randomizer() string {
+	var keys []string
 	for key := range albums {
-		return key
+		keys = append(keys, key)
 	}
-	return ""
+	rando := rand.Intn(len(albums))
+	return keys[rando]
 }
 
 func getRandomAlbum(c *gin.Context) {
-	key := getRandomKey()
+	key := randomizer()
 	album := albums[key]
 	c.JSON(http.StatusOK, album)
+}
+
+func getAlbumByID(c *gin.Context) {
+	id := c.Param("id")
+	album := albums[id]
+	c.JSON(http.StatusOK, album)
+}
+
+func postAlbum(c *gin.Context) {
+	id := uuid.New().String()
+	var newAlbum album
+	var returnAlbum album
+	returnAlbum.ID = id
+	newAlbum.ID = id
+	if err := c.BindJSON(&newAlbum); err != nil {
+		return
+	}
+	albums[id] = newAlbum
+	c.JSON(http.StatusCreated, returnAlbum)
 }
